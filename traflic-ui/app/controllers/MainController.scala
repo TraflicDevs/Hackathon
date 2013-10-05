@@ -1,5 +1,7 @@
 package controllers
 
+import java.io.StringWriter
+
 import play.api.mvc.{Action, Controller}
 import play.api.libs.json.Json
 import play.api.Routes
@@ -9,9 +11,12 @@ import play.api.data.format.Formats._
 import play.api.data.{Form, Mapping}
 import play.api.data.Forms._
 
-
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+
+import org.geotools.geojson.feature.FeatureJSON
+
+import models.Position
 
 object MainController extends Controller {
 
@@ -46,19 +51,27 @@ object MainController extends Controller {
     }
   }
 
+  val fjson:FeatureJSON = new FeatureJSON()
   def position() = Action { implicit request =>
     positionForm.bindFromRequest.fold(
       withErrors => BadRequest("missing data"),
       {
-        case Position(lat, lon, crs) =>  Ok(Json.obj(
-                                        ("lat", lat),
-                                        ("lon", lon),
-                                        ("crs", crs)
-                                      ))
+        case p@Position(lat, lon, crs) =>  {
+          val c = services.Routing.closestRoute(p)
+          c.map { case (feature, g, dist) =>
+            val writer:StringWriter = new StringWriter()
+            fjson.writeFeature(feature, writer)
+            val json:String = writer.toString()
+            val jsJson = Json.parse(json).as[JsObject]
+
+            Ok(jsJson)
+          }
+          .getOrElse(
+            BadRequest("Cannot find a route...")
+          )
+
+        }
       }
     )
   }
-
 }
-
-case class Position(lat:BigDecimal, lon:BigDecimal, crs:String)

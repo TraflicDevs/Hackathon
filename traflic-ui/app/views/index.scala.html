@@ -1,4 +1,4 @@
-@(message: String, positionForm:Form[controllers.Position])
+@(message: String, positionForm:Form[Position])
 
 @import helper.twitterBootstrap._
 
@@ -13,6 +13,7 @@
         <input type="hidden" name="crs" value="EPSG:31370"/>
         @helper.inputText(positionForm("lat"))
         @helper.inputText(positionForm("lon"))
+        <input type="submit" name="go" value="go"/>
       </form>
     </div>
     <div class="span9">

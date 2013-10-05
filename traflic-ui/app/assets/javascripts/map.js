@@ -45,27 +45,25 @@ function map() {
       var ll = new OpenLayers.LonLat(d.lon, d.lat);
       return {id:d.id, ll: ll, t: ll.clone().transform(fromProjection, toProjection), image: d.image};
     });
-    var a;
     _.each(points, function(p) {
       var marker = new OpenLayers.Marker(p.t,icon.clone());
       var popup = new OpenLayers.Popup("Caméra",
                         p.t,
                         new OpenLayers.Size(200,200),
-                        "Caméra<br><img src='"+p.image+"'/>",
+                        "Caméra<br/>",
                         true
                       );
+      popup.img = "<img src='"+p.image+"'/>";
       map.addPopup(popup);
       popup.hide();
       marker.events.register('click', marker, function(evt) {
+        if (popup.img) {
+          $(popup.div).append(popup.img);
+          delete popup.img;
+        }
         popup.show();
-        //OpenLayers.Event.stop(evt);
       });
       markers.addMarker(marker);
-
-      if (!a && p.id == 255) {
-        map.setCenter(p.t, 5);
-        a=true;
-      }
     });
 
   });
