@@ -1,0 +1,41 @@
+$(function() {
+
+  var crs = L.CRS.proj4js('EPSG:31370', '+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013 +y_0=5400088.438 +ellps=intl +towgs84=106.869,-52.2978,103.724,-0.33657,0.456955,-1.84218,1 +units=m +no_defs');
+
+  map = L.map('map', {
+      center: [192847, 126626],
+      crs:crs,
+      zoom: 5
+  });
+
+  var ortho = L.esri.dynamicMapLayer("http://geoservices.wallonie.be/arcgis/services/IMAGERIE/ORTHO_2009_2010/MapServer/WMSServer", {
+    opacity : 1,
+    layers:"0",
+    bboxSR: 31370,
+    imageSR: 31370,
+    format: 'png8'
+  });
+  map.addLayer(ortho);
+
+  //var geojsonLayer = new L.GeoJSON();
+  //window.loadGeoJson = function(data) {
+  //    geojsonLayer.addGeoJSON(data);
+  //}
+  //var geoJsonUrl = "http://hackathon01.cblue.be:9053/geoserver/hackathon/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=hackathon:routeswal&maxFeatures=50&srsName=EPSG:31370&outputFormat=json&format_options=callback:loadGeoJson";
+  //$.ajax({
+  //    url: geoJsonUrl,
+  //    dataType: 'jsonp'
+  //});
+  //map.addLayer(geojsonLayer);
+
+  // add a click handler to the button
+  $("#getMessageButton").click(function(event) {
+    // make an ajax get request to get the message
+    jsRoutes.controllers.MessageController.getMessage().ajax({
+      success: function(data) {
+        console.log(data)
+        $(".well").append($("<h1>").text(data.value))
+      }
+    })
+  })
+})

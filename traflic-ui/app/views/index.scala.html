@@ -1,0 +1,29 @@
+@(message: String, positionForm:Form[controllers.Position])
+
+@import helper.twitterBootstrap._
+
+@main("Traflic") {
+  <script src="http://openlayers.org/api/OpenLayers.js"></script>
+  <script type='text/javascript' src='@routes.Assets.at("javascripts/proj4-compressed.js")'></script>
+  <!--<script type='text/javascript' src='@routes.Assets.at("javascripts/OpenLayers.debug.js")'></script>-->
+
+  <div class="row-fluid">
+    <div class="span3">
+      <form id="position" action="#">
+        <input type="hidden" name="crs" value="EPSG:31370"/>
+        @helper.inputText(positionForm("lat"))
+        @helper.inputText(positionForm("lon"))
+      </form>
+    </div>
+    <div class="span9">
+      <div id="map"></div>
+    </div>
+  </div>
+
+
+  <!--<button id="getMessageButton">Get JSON Message</button>-->
+  <script type='text/javascript' src='@routes.Assets.at("javascripts/utils.js")'></script>
+  <script type='text/javascript' src='@routes.Assets.at("javascripts/map.js")'></script>
+  <script type='text/javascript' src='@routes.Assets.at("javascripts/index.js")'></script>
+
+}
