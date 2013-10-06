@@ -4,6 +4,7 @@
 
 GET     /                           controllers.MainController.index()
 GET     /cams                       controllers.MainController.cams()
+GET     /panels                       controllers.MainController.panels()
 GET     /position                   controllers.MainController.position()
 GET     /message                    controllers.MessageController.getMessage()
 GET     /assets/javascripts/routes  controllers.MessageController.javascriptRoutes()

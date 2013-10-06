@@ -47,7 +47,7 @@ object Congestions {
   }
 
   def all = {
-    WS.url("http://localhost:9000/assets/data/json/congestion.json").get()
+    WS.url("http://hackathon01.cblue.be:8088/traflic-api/congestion").get()
       .map{
         _.json.validate[Seq[Congestion]].fold(
           valid = xs => Some(xs),

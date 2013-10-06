@@ -1,6 +1,11 @@
 $(function() {
   var map = window.map();
 
+  var me = new OpenLayers.Layer.Markers( "Me" );
+  map.addLayer(me);
+  var meSize = new OpenLayers.Size(20, 34);
+  var meOffset = new OpenLayers.Pixel(-(meSize.w/2), -meSize.h);
+  var meIcon = new OpenLayers.Icon('http://maps.google.com/mapfiles/marker_blackV.png', meSize, meOffset);
 
   OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
     defaultHandlerOptions: {
@@ -26,9 +31,13 @@ $(function() {
     },
 
     trigger: function(e) {
-      var lonlat = map.getLonLatFromPixel(e.xy);
-      $("#lat").val(lonlat.lat);
-      $("#lon").val(lonlat.lon);
+      var p = map.getLonLatFromPixel(e.xy);
+      $("#lat").val(p.lat);
+      $("#lon").val(p.lon);
+      var ll = lonlat(p.lon, p.lat);
+      me.clearMarkers();
+      var marker = new OpenLayers.Marker(ll.ll,meIcon.clone());
+      me.addMarker(marker);
       return true;
     }
 
@@ -38,8 +47,20 @@ $(function() {
   map.addControl(click);
   click.activate();
 
-  var closestRoute = new OpenLayers.Layer.Vector();
+  var closestRoute = new OpenLayers.Layer.Vector("Closest",{
+    styleMap: new OpenLayers.StyleMap({
+        strokeWidth: 3,
+        strokeColor: "#110000"
+    })
+  });
+
   map.addLayer(closestRoute);
+
+  var markers = new OpenLayers.Layer.Markers( "Congestions" );
+  map.addLayer(markers);
+  var size = new OpenLayers.Size(32, 32);
+  var offset = new OpenLayers.Pixel(-(size.w/2), -size.h);
+  var icon = new OpenLayers.Icon('http://maps.google.com/intl/en_us/mapfiles/ms/micons/orange-dot.png', size, offset);
 
   $("#position").on("submit", function(e) {
     jsRoutes.controllers.MainController.position()
@@ -50,12 +71,20 @@ $(function() {
                                               var geojson_format = new OpenLayers.Format.GeoJSON();
                                               closestRoute.removeAllFeatures()
                                               closestRoute.addFeatures(geojson_format.read(data.road));
+                                              var cs = _.map(data.congestions, function(c) {
+                                                return lonlat(c.Lon, c.Lat);
+                                              });
+                                              markers.clearMarkers();
+                                              _.each(cs, function(ll) {
+                                                var marker = new OpenLayers.Marker(ll.t,icon.clone());
+                                                markers.addMarker(marker);
+                                              });
+
                                               $("#msg").html("Il y a "+_.size(data.congestions)+" congestion(s) sur votre trajectoire et dans votre voisinage!")
                                             }
                                           }
                                         });
     e.preventDefault();
     e.stopImmediatePropagation();
-  })
-
+  });
 });

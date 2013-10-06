@@ -49,7 +49,38 @@ object MainController extends Controller {
                     val lon = (x \ "lon").as[Double]
                     val id = (x \ "id").as[Int]
                     WS.url("http://trafiroutes.wallonie.be/trafiroutes/Rest/Resources/Cameras/"+id).get()
-                      .map(i => Json.obj(("id", id), ("lat", lat), ("lon", lon), ("image",i.json.as[JsObject] \ "url")))
+                      .map(i =>
+                        Json.obj(
+                          ("id", id),
+                          ("lat", lat),
+                          ("lon", lon),
+                          ("image", i.json.as[JsObject] \ "url")
+                        )
+                      )
+                  }
+                ))
+    } yield {
+      Ok(JsArray(os))
+    }
+  }
+
+  def panels = Action.async {
+    for {
+      list  <-  WS.url("http://trafiroutes.wallonie.be/trafiroutes/Rest/Resources/PanneauxMsgVar").get()
+                  .map(_.json.as[Seq[JsValue]])
+      os    <-  Future.sequence(list.map(x => {
+                    val lat = (x \ "lat").as[Double]
+                    val lon = (x \ "lon").as[Double]
+                    val id = (x \ "id").as[Int]
+                    WS.url("http://trafiroutes.wallonie.be/trafiroutes/Rest/Resources/PanneauxMsgVar/"+id).get()
+                      .map(i =>
+                        Json.obj(
+                          ("id", id),
+                          ("lat", lat),
+                          ("lon", lon),
+                          ("label", i.json.as[JsObject] \ "libelleLong")
+                        )
+                      )
                   }
                 ))
     } yield {
