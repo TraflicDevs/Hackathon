@@ -4,14 +4,12 @@ import java.util.{Map=>JMap, HashMap}
 
 import org.geotools.data._
 
-import org.geotools.factory.{Hints, CommonFactoryFinder, GeoTools}
+import org.geotools.factory.{CommonFactoryFinder, GeoTools}
 import org.geotools.feature.{FeatureCollection, FeatureIterator}
-import org.geotools.geometry.{GeometryFactoryFinder}
 import org.geotools.geometry.jts.JTS
 import org.geotools.geometry.jts.Geometries
 import org.geotools.geometry.jts.Geometries._
 import org.geotools.geometry.jts.ReferencedEnvelope
-import org.geotools.referencing.{CRS, ReferencingFactoryFinder}
 
 import org.opengis.feature.Feature
 import org.opengis.feature.simple._
@@ -24,11 +22,10 @@ import com.vividsolutions.jts.geom.{Envelope, MultiLineString, Coordinate, Geome
 import com.vividsolutions.jts.linearref.{LocationIndexedLine, LinearLocation}
 
 import models.Position
+import services.CRS._
+
 
 object Routing {
-  val EPSG_31370 = CRS.parseWKT("""
-      PROJCS["Belge 1972 / Belgian Lambert 72",GEOGCS["Belge 1972",DATUM["Reseau_National_Belge_1972",SPHEROID["International 1924",6378388,297,AUTHORITY["EPSG","7022"]],TOWGS84[106.869,-52.2978,103.724,-0.33657,0.456955,-1.84218,1],AUTHORITY["EPSG","6313"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4313"]],UNIT["metre",1,AUTHORITY["EPSG","9001"]],PROJECTION["Lambert_Conformal_Conic_2SP"],PARAMETER["standard_parallel_1",51.16666723333333],PARAMETER["standard_parallel_2",49.8333339],PARAMETER["latitude_of_origin",90],PARAMETER["central_meridian",4.367486666666666],PARAMETER["false_easting",150000.013],PARAMETER["false_northing",5400088.438],AUTHORITY["EPSG","31370"],AXIS["X",EAST],AXIS["Y",NORTH]]
-    """.trim);
 
   def connect(capa:String, findTypeName:Seq[String]=>Option[String]):Option[(String, FeatureSource[SimpleFeatureType, SimpleFeature])] = {
     val connectionParameters  = new HashMap[String, String]()
@@ -51,7 +48,7 @@ object Routing {
   }
 
 
-  def closestRoute(position:Position) = {
+  def closestRoute(position:Position):Option[(SimpleFeature, Geometry, Double)] = {
     //wfs to the routes layer to get all route around (like 50m)
     val source =  connect(
                     "http://hackathon01.cblue.be:9053/geoserver/hackathon/wfs?request=GetCapabilities&service=WFS&version=1.1.0",
@@ -61,21 +58,10 @@ object Routing {
     source.flatMap { case (typeName, source) =>
       val geomName = source.getSchema().getGeometryDescriptor().getLocalName()
 
-      val hints:Hints = new Hints( Hints.CRS, EPSG_31370 )
-      val positionFactory = GeometryFactoryFinder.getPositionFactory( hints )
+      val center = position.toDirectPosition(EPSG_31370)
+      val centerCoordinate = position.coordinate
 
-      val arrayPoint = Array[Double](position.lon.toDouble, position.lat.toDouble)
-      val center = positionFactory.createDirectPosition(arrayPoint)
-      val centerCoordinate = new Coordinate(arrayPoint(0), arrayPoint(1))
-
-      val delta = 500
-
-      val upperLeft = positionFactory.createDirectPosition( Array(arrayPoint(0)-delta, arrayPoint(1)-delta))
-      val bottomRight = positionFactory.createDirectPosition( Array(arrayPoint(0)+delta, arrayPoint(1)+delta))
-
-      val buffer:ReferencedEnvelope = new ReferencedEnvelope(EPSG_31370)
-      buffer.expandToInclude(center)
-      buffer.expandBy(delta)
+      val buffer:ReferencedEnvelope = position.buffer(1000)(EPSG_31370)
 
       val ff:FilterFactory2 = CommonFactoryFinder.getFilterFactory2( GeoTools.getDefaultHints() )
       val polygon:Object = JTS.toGeometry( buffer )
@@ -85,7 +71,6 @@ object Routing {
       val features:FeatureCollection[SimpleFeatureType, SimpleFeature] = source.getFeatures( query )
 
       val iterator:FeatureIterator[SimpleFeature] = features.features()
-      //val bounds:ReferencedEnvelope = new ReferencedEnvelope()
       try {
         val fs = fiToStream(iterator).map { feature =>
           val geom = feature.getAttribute(geomName).asInstanceOf[Geometry]
@@ -114,8 +99,7 @@ object Routing {
           case Some(x) => x
         }
 
-        fs
-          .sortBy {
+        fs.sortBy {
             case x => x._3
           }
           .headOption

@@ -29,6 +29,7 @@ $(function() {
       var lonlat = map.getLonLatFromPixel(e.xy);
       $("#lat").val(lonlat.lat);
       $("#lon").val(lonlat.lon);
+      return true;
     }
 
   });
@@ -48,7 +49,8 @@ $(function() {
                                             if (data) {
                                               var geojson_format = new OpenLayers.Format.GeoJSON();
                                               closestRoute.removeAllFeatures()
-                                              closestRoute.addFeatures(geojson_format.read(data));
+                                              closestRoute.addFeatures(geojson_format.read(data.road));
+                                              $("#msg").html("Il y a "+_.size(data.congestions)+" congestion(s) sur votre trajectoire et dans votre voisinage!")
                                             }
                                           }
                                         });
